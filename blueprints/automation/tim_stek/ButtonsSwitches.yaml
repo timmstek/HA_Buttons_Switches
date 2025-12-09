@@ -1,0 +1,21 @@
+
+blueprint:
+  name: Basis blueprint (voorbeeld)
+  description: Minimale automation blueprint als startpunt.
+  domain: automation
+  source_url: https://github.com/timmstek/HA_Buttons_Switches/blob/main/blueprints/automation/tim_stek/ButtonsSwitches.yaml
+  input:
+    test_entity:
+      name: Test entity (bijv. een licht)
+      selector:
+        entity:
+          domain: light
+
+trigger:
+  - platform: homeassistant
+    event: start
+
+action:
+  - service: light.turn_on
+    target:
+      entity_id: !input test_entity
