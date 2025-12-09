@@ -1,0 +1,209 @@
+
+blueprint:
+  name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+  description: >
+    Voor ZHA remotes/switches. Single/double voeren direct acties uit.
+    Long press voert een herhaal-actie uit met instelbaar interval en limiet, tot release.
+    Velden met * zijn verplicht. Gebruik endpoints als je remote knop 1/2 via endpoints onderscheidt.
+  domain: automation
+  source_url: https://github.com/timmstek/HA_Buttons_Switches/blob/main/blueprints/automation/tim_stek/ButtonsSwitches_ZHA.yaml
+
+  input:
+    # ---------- Algemeen ----------
+    loop_interval_ms:
+      name: Loop-interval (ms) *
+      description: Interval tussen iteraties tijdens LONG press
+      default: 200
+      selector:
+        number:
+          min: 50
+          max: 2000
+          step: 50
+          unit_of_measurement: ms
+          mode: slider
+
+    loop_max_iterations:
+      name: Max. iteraties per LONG press *
+      description: Veiligheidslimiet; voorkomt oneindige loop
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 500
+          step: 1
+          mode: box
+
+    # ---------- ZHA device ----------
+    zha_device:
+      name: ZHA Device *
+      description: Kies de ZHA-remote/switch
+      selector:
+        device:
+          integration: zha
+          multiple: false
+
+    # Optioneel: endpoints voor knop 1 en 2 (laat leeg als je device geen endpoints gebruikt)
+    zha_b1_endpoint:
+      name: Button 1 endpoint (optioneel)
+      default: ""
+      selector: { text: {} }
+    zha_b2_endpoint:
+      name: Button 2 endpoint (optioneel)
+      default: ""
+      selector: { text: {} }
+
+    # ---------- Commando's (pas aan aan je device-indeling) ----------
+    # Button 1
+    zha_b1_cmd_single:
+      name: B1 commando single
+      default: single
+      selector: { text: {} }
+    zha_b1_cmd_double:
+      name: B1 commando double
+      default: double
+      selector: { text: {} }
+    zha_b1_cmd_long_start:
+      name: B1 commando long START (voor loop)
+      description: Vaak 'move_with_on_off' of 'hold'
+      default: move_with_on_off
+      selector: { text: {} }
+
+    # Button 2
+    zha_b2_cmd_single:
+      name: B2 commando single
+      default: single
+      selector: { text: {} }
+    zha_b2_cmd_double:
+      name: B2 commando double
+      default: double
+      selector: { text: {} }
+    zha_b2_cmd_long_start:
+      name: B2 commando long START (voor loop)
+      description: Vaak 'move_with_on_off' of 'hold'
+      default: hold
+      selector: { text: {} }
+
+    # Release (gemeenschappelijk)
+    zha_cmd_release:
+      name: Commando RELEASE (stop de loop)
+      description: Vaak 'stop_with_on_off' of 'release'
+      default: stop_with_on_off
+      selector: { text: {} }
+
+    # ---------- Acties ----------
+    b1_single_action:
+      name: Button 1 – Single press (actie)
+      default: []
+      selector: { action: {} }
+    b1_double_action:
+      name: Button 1 – Double press (actie)
+      default: []
+      selector: { action: {} }
+    b1_long_loop_action:
+      name: Button 1 – Long press (LOOP-actie per iteratie)
+      default: []
+      selector: { action: {} }
+
+    b2_single_action:
+      name: Button 2 – Single press (actie)
+      default: []
+      selector: { action: {} }
+    b2_double_action:
+      name: Button 2 – Double press (actie)
+      default: []
+      selector: { action: {} }
+    b2_long_loop_action:
+      name: Button 2 – Long press (LOOP-actie per iteratie)
+      default: []
+      selector: { action: {} }
+
+mode: single
+max_exceeded: silent
+
+# -- TRIGGERS --
+trigger:
+  - platform: event
+    id: zha_event
+    event_type: zha_event
+
+# -- VARIABELEN --
+variables:
+  loop_interval_ms: !input loop_interval_ms
+  loop_max: !input loop_max_iterations
+  zha_device_id: "{{ inputs.zha_device }}"
+
+  zha_cmd: "{{ (trigger.event.data.command if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
+  zha_event_device_id: "{{ (trigger.event.data.device_id if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
+  zha_endpoint: "{{ (trigger.event.data.endpoint_id if trigger is defined and trigger.id == 'zha_event' and trigger.event.data.endpoint_id is defined else '') | string }}"
+
+  b1_ep: "{{ (inputs.zha_b1_endpoint | string) }}"
+  b2_ep: "{{ (inputs.zha_b2_endpoint | string) }}"
+
+# -- ACTIES --
+action:
+  - choose:
+      # -------- Button 1 --------
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b1_cmd_single | string)
+             and (b1_ep == '' or zha_endpoint == b1_ep) }}
+        sequence: !input b1_single_action
+
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b1_cmd_double | string)
+             and (b1_ep == '' or zha_endpoint == b1_ep) }}
+        sequence: !input b1_double_action
+
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b1_cmd_long_start | string)
+             and (b1_ep == '' or zha_endpoint == b1_ep) }}
+        sequence:
+          - repeat:
+              sequence:
+                - sequence: !input b1_long_loop_action
+                - wait_for_trigger:
+                    - platform: event
+                      event_type: zha_event
+                      event_data:
+                        device_id: !input zha_device
+                        command: !input zha_cmd_release
+                        {% if (inputs.zha_b1_endpoint | string) != '' %}
+                        endpoint_id: "{{ inputs.zha_b1_endpoint }}"
+                        {% endif %}
+                  timeout:
+                    milliseconds: !input loop_interval_ms
+                  continue_on_timeout: true
+              until:
+                - condition: template
+                  value_template: "{{ wait.trigger is defined or repeat.index >= loop_max }}"
+
+      # -------- Button 2 --------
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b2_cmd_single | string)
+             and (b2_ep == '' or zha_endpoint == b2_ep) }}
+        sequence: !input b2_single_action
+
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b2_cmd_double | string)
+             and (b2_ep == '' or zha_endpoint == b2_ep) }}
+        sequence: !input b2_double_action
+
+      - conditions: >
+          {{ trigger.id == 'zha_event'
+             and zha_event_device_id == zha_device_id
+             and zha_cmd == (inputs.zha_b2_cmd_long_start | string)
+             and (b2_ep == '' or zha_endpoint == b2_ep) }}
+        sequence:
+          - repeat:
+              sequence:
+                - sequence: !input b2_long_loop_action
+                - wait_for_trigger:

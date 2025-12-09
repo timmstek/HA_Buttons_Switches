@@ -1,0 +1,247 @@
+
+blueprint:
+  name: Buttons/Switches – Matter of ZHA (2 knoppen, single/double/long)
+  description: >
+    Eén blueprint voor Matter of ZHA. Kies bovenaan het integratietype.
+    - Matter: 2 knoppen via event-entiteiten (zoals LIFX 2 Button), met multi_press_1/2 en long_press.
+    - ZHA: single, double en long; long press op de UP-knop herhaalt (loop) tot release.
+    Debounce/extra helpers zijn weggelaten zoals gevraagd.
+  domain: automation
+  source_url: https://github.com/timmstek/HA_Buttons_Switches/blob/main/blueprints/automation/tim_stek/ButtonsSwitches.yaml
+
+  input:
+    integration_type:
+      name: Integratie type
+      description: Kies Matter of ZHA
+      default: matter
+      selector:
+        select:
+          options:
+            - matter
+            - zha
+          mode: dropdown
+
+    # --- MATTER inputs (LIFX 2 Button-achtig) ---
+    button1_entity:
+      name: Matter – Button 1 event entity
+      description: Event-entiteit voor knop 1 (bijv. event.devicename_button_31)
+      selector:
+        entity:
+          domain: event
+    button2_entity:
+      name: Matter – Button 2 event entity
+      description: Event-entiteit voor knop 2 (bijv. event.devicename_button_32)
+      selector:
+        entity:
+          domain: event
+
+    b1_single:
+      name: Matter – Button 1 single press (actie)
+      default: []
+      selector: { action: {} }
+    b1_double:
+      name: Matter – Button 1 double press (actie)
+      default: []
+      selector: { action: {} }
+    b1_long:
+      name: Matter – Button 1 long press (actie)
+      default: []
+      selector: { action: {} }
+
+    b2_single:
+      name: Matter – Button 2 single press (actie)
+      default: []
+      selector: { action: {} }
+    b2_double:
+      name: Matter – Button 2 double press (actie)
+      default: []
+      selector: { action: {} }
+    b2_long:
+      name: Matter – Button 2 long press (actie)
+      default: []
+      selector: { action: {} }
+
+    # --- ZHA inputs ---
+    zha_device_ieee:
+      name: ZHA – Device IEEE (van je remote/switch)
+      description: Kopieer de 'device_ieee' uit je zha_event (Developer Tools → Events → luister naar zha_event)
+      selector:
+        text: {}
+
+    zha_single_action:
+      name: ZHA – Single press (actie)
+      default: []
+      selector: { action: {} }
+    zha_double_action:
+      name: ZHA – Double press (actie)
+      default: []
+      selector: { action: {} }
+    zha_long_action:
+      name: ZHA – Long press (generiek/Down éénmalig)
+      description: Long press zonder loop (bijv. DOWN of devices die 'hold' geven)
+      default: []
+      selector: { action: {} }
+    zha_long_up_loop_action:
+      name: ZHA – Long press (UP) loop-actie
+      description: Herhaal tijdens vasthouden (bijv. brightness omhoog in stapjes)
+      default: []
+      selector: { action: {} }
+    zha_long_up_loop_delay_ms:
+      name: ZHA – Loop-interval (ms)
+      default: 200
+      selector:
+        number:
+          min: 50
+          max: 1000
+          step: 50
+          unit_of_measurement: ms
+          mode: slider
+
+    # ZHA commando-namen (pas aan als jouw device andere strings gebruikt)
+    zha_cmd_single:
+      name: ZHA – commando voor single press
+      default: single
+      selector: { text: {} }
+    zha_cmd_double:
+      name: ZHA – commando voor double press
+      default: double
+      selector: { text: {} }
+    zha_cmd_long_generic:
+      name: ZHA – commando voor long press (niet-loop; vaak 'hold')
+      default: hold
+      selector: { text: {} }
+    zha_cmd_up_hold_loop:
+      name: ZHA – commando voor UP long hold (loop)
+      description: Vaak 'move_with_on_off' (dim omhoog vasthouden)
+      default: move_with_on_off
+      selector: { text: {} }
+    zha_cmd_release:
+      name: ZHA – commando voor release (loslaten)
+      description: Vaak 'stop_with_on_off'
+      default: stop_with_on_off
+      selector: { text: {} }
+
+mode: queued
+max_exceeded: silent
+
+# --- TRIGGERS ---
+# MATTER: state-triggers op beide event-entiteiten
+trigger:
+  - platform: state
+    id: matter_button_state
+    entity_id: !input button1_entity
+  - platform: state
+    id: matter_button_state
+    entity_id: !input button2_entity
+
+  # ZHA: één algemene zha_event-trigger; we filteren later op device_ieee en command
+  - platform: event
+    id: zha_event
+    event_type: zha_event
+
+# --- VARIABELEN ---
+variables:
+  integration_type: !input integration_type
+
+  # MATTER afleiding
+  matter_btn_entity: "{{ trigger.entity_id | default('') }}"
+  matter_event_type: "{{ state_attr(matter_btn_entity, 'event_type') | default('') }}"
+  matter_button_name: >-
+    {% if 'button_31' in matter_btn_entity or 'button_1_matter' in matter_btn_entity or 'button_1' in matter_btn_entity or 'switch_1' in matter_btn_entity %}
+      button_1
+    {% elif 'button_32' in matter_btn_entity or 'button_2_matter' in matter_btn_entity or 'button_2' in matter_btn_entity or 'switch_2' in matter_btn_entity %}
+      button_2
+    {% else %}
+      unknown
+    {% endif %}
+
+  # ZHA afleiding
+  zha_cmd: "{{ (trigger.event.data.command if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
+  zha_ieee: "{{ (trigger.event.data.device_ieee if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
+  loop_delay_ms: !input zha_long_up_loop_delay_ms
+
+# --- ACTIES ---
+action:
+  - choose:
+
+      # ===== MATTER =====
+      - conditions:
+          - condition: template
+            value_template: "{{ integration_type == 'matter' and trigger.id == 'matter_button_state' }}"
+        sequence:
+          - choose:
+              # Button 1
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_1' and matter_event_type == 'multi_press_1' }}"
+                sequence: !input b1_single
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_1' and matter_event_type == 'multi_press_2' }}"
+                sequence: !input b1_double
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_1' and matter_event_type == 'long_press' }}"
+                sequence: !input b1_long
+
+              # Button 2
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_2' and matter_event_type == 'multi_press_1' }}"
+                sequence: !input b2_single
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_2' and matter_event_type == 'multi_press_2' }}"
+                sequence: !input b2_double
+              - conditions:
+                  - condition: template
+                    value_template: "{{ matter_button_name == 'button_2' and matter_event_type == 'long_press' }}"
+                sequence: !input b2_long
+
+      # ===== ZHA =====
+      - conditions:
+          - condition: template
+            value_template: "{{ integration_type == 'zha' and trigger.id == 'zha_event' and zha_ieee == (inputs.zha_device_ieee | string) }}"
+        sequence:
+          - choose:
+              # Single press
+              - conditions:
+                  - condition: template
+                    value_template: "{{ zha_cmd == (inputs.zha_cmd_single | string) }}"
+                sequence: !input zha_single_action
+
+              # Double press
+              - conditions:
+                  - condition: template
+                    value_template: "{{ zha_cmd == (inputs.zha_cmd_double | string) }}"
+                sequence: !input zha_double_action
+
+              # Long press (generiek, éénmalig – bijv. DOWN of devices die 'hold' geven)
+              - conditions:
+                  - condition: template
+                    value_template: "{{ zha_cmd == (inputs.zha_cmd_long_generic | string) }}"
+                sequence: !input zha_long_action
+
+              # Long press UP – loop zolang niet 'release' gezien wordt
+              - conditions:
+                  - condition: template
+                    value_template: "{{ zha_cmd == (inputs.zha_cmd_up_hold_loop | string) }}"
+                sequence:
+                  - repeat:
+                      sequence:
+                        - sequence: !input zha_long_up_loop_action
+                        - delay:
+                            milliseconds: "{{ loop_delay_ms }}"
+                        - wait_for_trigger:
+                            - platform: event
+                              event_type: zha_event
+                              event_data:
+                                device_ieee: !input zha_device_ieee
+                                command: !input zha_cmd_release
+                          timeout:
+                            milliseconds: "{{ loop_delay_ms }}"
+                          continue_on_timeout: true
+                      until:
+                        - condition: template
+                          value_template: "{{ wait.trigger is defined }}"
+    default: []
