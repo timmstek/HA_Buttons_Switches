@@ -1,240 +1,490 @@
-
+# Blueprint metadata
 blueprint:
   name: ZHA – 2-Button Switch (single/double/long met loop tot release)
-  description: >
-    Voor ZHA remotes/switches. Single/double voeren direct acties uit.
-    Long press voert een herhaal-actie uit met instelbaar interval en limiet, tot release.
-    Velden met * zijn verplicht. Gebruik endpoints als je remote knop 1/2 via endpoints onderscheidt.
+  description: |
+    # Controller - IKEA E1743 TRÅDFRI On/Off Switch & Dimmer
+
+    Controller automation for executing any kind of action triggered by the provided IKEA E1743 TRÅDFRI On/Off Switch & Dimmer. Allows to optionally loop an action on a button long press.
+    Supports deCONZ, ZHA, Zigbee2MQTT.
+
+    Automations created with this blueprint can be connected with one or more [Hooks](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/hooks) supported by this controller.
+    Hooks allow to easily create controller-based automations for interacting with media players, lights, covers and more.
+    See the list of [Hooks available for this controller](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/controllers/ikea_e1743#available-hooks) for additional details.
+
+    ## More Info
+
+    ℹ️ Version 2025.04.19
+    📝 [Changelog](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/controllers/ikea_e1743/#changelog)
+    📕 Full documentation regarding this blueprint is available [here](https://epmatt.github.io/awesome-ha-blueprints/docs/blueprints/controllers/ikea_e1743).
+
+    🚀 This blueprint is part of the **[Awesome HA Blueprints](https://epmatt.github.io/awesome-ha-blueprints) project**. Please consider **[leaving a star on GitHub](https://github.com/EPMatt/awesome-ha-blueprints)**! 🌟
+
+source_url: https://raw.githubusercontent.com/timmstek/HA_Buttons_Switches/refs/heads/main/blueprints/automation/tim_stek/ButtonsSwitches_ZHA.yaml
   domain: automation
-  source_url: https://github.com/timmstek/HA_Buttons_Switches/blob/main/blueprints/automation/tim_stek/ButtonsSwitches_ZHA.yaml
-
+  homeassistant:
+    min_version: 2024.10.0
   input:
-    # ---------- Algemeen ----------
-    loop_interval_ms:
-      name: Loop-interval (ms) *
-      description: Interval tussen iteraties tijdens LONG press
-      default: 200
+    integration:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Integration used for connecting the remote with Home Assistant. Select one of the available values.
       selector:
-        number:
-          min: 50
-          max: 2000
-          step: 50
-          unit_of_measurement: ms
-          mode: slider
-
-    loop_max_iterations:
-      name: Max. iteraties per LONG press *
-      description: Veiligheidslimiet; voorkomt oneindige loop
-      default: 60
+        select:
+          options:
+            - deCONZ
+            - ZHA
+            - Zigbee2MQTT
+    controller_device:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: The controller device to use for the automation. Choose a value only if the remote is integrated with deCONZ, ZHA, Zigbee2MQTT.
+      default: ''
+      selector:
+        device:
+          filter:
+            # source: https://www.zigbee2mqtt.io/devices/E1743.html#ikea-e1743
+            # source: https://zigbee.blakadder.com/Ikea_E1743.html
+            - integration: mqtt
+              manufacturer: IKEA
+              model: TRADFRI on/off switch
+            # For backwards compatibility with z2m 1.x. model_id is added to end of model rather than a seperate attribute in z2m 2.x
+            - integration: mqtt
+              manufacturer: IKEA
+              model: TRADFRI on/off switch (E1743)
+            # source: https://github.com/dresden-elektronik/deconz-rest-plugin/wiki/Supported-Devices
+            - integration: zha
+              manufacturer: IKEA of Sweden
+              model: TRADFRI on/off switch
+            - integration: deconz
+              manufacturer: IKEA of Sweden
+              model: TRADFRI on/off switch
+          multiple: false
+    helper_last_controller_event:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Input Text used to store the last event fired by the controller. You will need to manually create a text input entity for this, please read the blueprint Additional Notes for more info.
+      default: ''
+      selector:
+        entity:
+          domain: input_text
+    # inputs for custom actions
+    action_button_up_short:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on short up button press.
+      default: []
+      selector:
+        action:
+    action_button_up_long:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on long up button press.
+      default: []
+      selector:
+        action:
+    action_button_up_release:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on up button release after long press.
+      default: []
+      selector:
+        action:
+    action_button_up_double:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on double up button press.
+      default: []
+      selector:
+        action:
+    action_button_down_short:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on short down button press.
+      default: []
+      selector:
+        action:
+    action_button_down_long:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on long down button press.
+      default: []
+      selector:
+        action:
+    action_button_down_release:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on down button release after long press.
+      default: []
+      selector:
+        action:
+    action_button_down_double:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Action to run on double down button press.
+      default: []
+      selector:
+        action:
+    # inputs for looping custom actions on long button press events until the corresponding release event is received
+    button_up_long_loop:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Loop the up button action until the button is released.
+      default: false
+      selector:
+        boolean:
+    button_up_long_max_loop_repeats:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: >-
+        Maximum number of repeats for the custom action, when looping is enabled.
+        Use it as a safety limit to prevent an endless loop in case the corresponding stop event is not received.
+      default: 500
       selector:
         number:
           min: 1
-          max: 500
+          max: 5000
+          mode: slider
           step: 1
-          mode: box
-
-    # ---------- ZHA device ----------
-    zha_device:
-      name: ZHA Device *
-      description: Kies de ZHA-remote/switch
+    button_down_long_loop:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Loop the down button action until the button is released.
+      default: false
       selector:
-        device:
-          integration: zha
-          multiple: false
-
-    # Optioneel: endpoints voor knop 1 en 2 (laat leeg als je device geen endpoints gebruikt)
-    zha_b1_endpoint:
-      name: Button 1 endpoint (optioneel)
-      default: ""
-      selector: { text: {} }
-    zha_b2_endpoint:
-      name: Button 2 endpoint (optioneel)
-      default: ""
-      selector: { text: {} }
-
-    # ---------- Commando's (pas aan aan je device-indeling) ----------
-    # Button 1
-    zha_b1_cmd_single:
-      name: B1 commando single
-      default: single
-      selector: { text: {} }
-    zha_b1_cmd_double:
-      name: B1 commando double
-      default: double
-      selector: { text: {} }
-    zha_b1_cmd_long_start:
-      name: B1 commando long START (voor loop)
-      description: Vaak 'move_with_on_off' of 'hold'
-      default: move_with_on_off
-      selector: { text: {} }
-
-    # Button 2
-    zha_b2_cmd_single:
-      name: B2 commando single
-      default: single
-      selector: { text: {} }
-    zha_b2_cmd_double:
-      name: B2 commando double
-      default: double
-      selector: { text: {} }
-    zha_b2_cmd_long_start:
-      name: B2 commando long START (voor loop)
-      description: Vaak 'move_with_on_off' of 'hold'
-      default: hold
-      selector: { text: {} }
-
-    # Release (gemeenschappelijk)
-    zha_cmd_release:
-      name: Commando RELEASE (stop de loop)
-      description: Vaak 'stop_with_on_off' of 'release'
-      default: stop_with_on_off
-      selector: { text: {} }
-
-    # ---------- Acties ----------
-    b1_single_action:
-      name: Button 1 – Single press (actie)
-      default: []
-      selector: { action: {} }
-    b1_double_action:
-      name: Button 1 – Double press (actie)
-      default: []
-      selector: { action: {} }
-    b1_long_loop_action:
-      name: Button 1 – Long press (LOOP-actie per iteratie)
-      default: []
-      selector: { action: {} }
-
-    b2_single_action:
-      name: Button 2 – Single press (actie)
-      default: []
-      selector: { action: {} }
-    b2_double_action:
-      name: Button 2 – Double press (actie)
-      default: []
-      selector: { action: {} }
-    b2_long_loop_action:
-      name: Button 2 – Long press (LOOP-actie per iteratie)
-      default: []
-      selector: { action: {} }
-
-mode: single
-max_exceeded: silent
-
-# -- TRIGGERS --
-trigger:
-  - platform: event
-    id: zha_event
-    event_type: zha_event
-
-# -- VARIABELEN --
+        boolean:
+    button_down_long_max_loop_repeats:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: >-
+        Maximum number of repeats for the custom action, when looping is enabled.
+        Use it as a safety limit to prevent an endless loop in case the corresponding stop event is not received.
+      default: 500
+      selector:
+        number:
+          min: 1
+          max: 5000
+          mode: slider
+          step: 1
+    # inputs for enabling double press events
+    button_up_double_press:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Choose whether or not to expose the virtual double press event for the up button. Turn this on if you are providing an action for the up button double press event.
+      default: false
+      selector:
+        boolean:
+    button_down_double_press:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Choose whether or not to expose the virtual double press event for the down button. Turn this on if you are providing an action for the down button double press event.
+      default: false
+      selector:
+        boolean:
+    # helpers used to properly recognize the remote button events
+    helper_double_press_delay:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description: Max delay between the first and the second button press for the double press event. Provide a value only if you are using a double press action. Increase this value if you notice that the double press action is not triggered properly.
+      default: 500
+      selector:
+        number:
+          min: 100
+          max: 5000
+          unit_of_measurement: milliseconds
+          mode: box
+          step: 10
+    helper_debounce_delay:
+name: ZHA – 2-Button Switch (single/double/long met loop tot release)
+      description:
+        Delay used for debouncing RAW controller events, by default set to 0. A value of 0 disables the debouncing feature. Increase this value if you notice custom actions or linked Hooks running multiple times when interacting with the device. When the controller needs to be debounced,
+        usually a value of 100 is enough to remove all duplicate events.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: milliseconds
+          mode: box
+          step: 10
+# Automation schema
 variables:
-  # Invoerwaarden
-  loop_interval_ms: !input loop_interval_ms
-  loop_max: !input loop_max_iterations
-  zha_device_id: !input zha_device
-
-  # Huidig event
-  zha_cmd: "{{ (trigger.event.data.command if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
-  zha_event_device_id: "{{ (trigger.event.data.device_id if trigger is defined and trigger.id == 'zha_event' else '') | string }}"
-  zha_endpoint: "{{ (trigger.event.data.endpoint_id if trigger is defined and trigger.id == 'zha_event' and trigger.event.data.endpoint_id is defined else '') | string }}"
-
-  # Endpoints uit inputs (leeg = niet filteren)
-  b1_ep: !input zha_b1_endpoint
-  b2_ep: !input zha_b2_endpoint
-
-# -- ACTIES --
-action:
+  ahb_version: 2025.11.04
+  ahb_maintainers: [EPMatt]
+  # convert input tags to variables, to be used in templates
+  integration: !input integration
+  button_up_long_loop: !input button_up_long_loop
+  button_up_long_max_loop_repeats: !input button_up_long_max_loop_repeats
+  button_up_double_press: !input button_up_double_press
+  button_down_long_loop: !input button_down_long_loop
+  button_down_long_max_loop_repeats: !input button_down_long_max_loop_repeats
+  button_down_double_press: !input button_down_double_press
+  helper_last_controller_event: !input helper_last_controller_event
+  helper_double_press_delay: !input helper_double_press_delay
+  helper_debounce_delay: !input helper_debounce_delay
+  # integration id used to select items in the action mapping
+  integration_id: '{{ integration | lower }}'
+  # adjusted debounce delay so that the resulting double press delay is exactly as specified by the user when running the action, taking also account of debouncing
+  # make sure it never goes below the minimum double press delay
+  adjusted_double_press_delay: '{{ [helper_double_press_delay - helper_debounce_delay, 100] | max }}'
+  # mapping between actions and integrations
+  actions_mapping:
+    deconz:
+      button_up_short: ['1002']
+      button_up_long: ['1001']
+      button_up_release: ['1003']
+      button_down_short: ['2002']
+      button_down_long: ['2001']
+      button_down_release: ['2003']
+    zha:
+      button_up_short: ['on']
+      button_up_long: [move_with_on_off_MoveMode.Up_83, move_with_on_off_0_83]
+      button_up_release: [stop_with_on_off, stop]
+      button_down_short: ['off']
+      button_down_long: [move_MoveMode.Down_83_bitmap8.0_bitmap8.0, move_1_83]
+      button_down_release: [stop_with_on_off, stop]
+    zigbee2mqtt:
+      # source: https://www.zigbee2mqtt.io/devices/E1743.html#ikea-e1743
+      button_up_short: ['on']
+      button_up_long: [brightness_move_up]
+      button_up_release: [brightness_stop]
+      button_down_short: ['off']
+      button_down_long: [brightness_move_down]
+      button_down_release: [brightness_stop]
+  # pre-choose actions for buttons based on configured integration
+  # no need to perform this task at automation runtime
+  button_up_short: '{{ actions_mapping[integration_id]["button_up_short"] }}'
+  button_up_long: '{{ actions_mapping[integration_id]["button_up_long"] }}'
+  button_up_release: '{{ actions_mapping[integration_id]["button_up_release"] }}'
+  button_down_short: '{{ actions_mapping[integration_id]["button_down_short"] }}'
+  button_down_long: '{{ actions_mapping[integration_id]["button_down_long"] }}'
+  button_down_release: '{{ actions_mapping[integration_id]["button_down_release"] }}'
+  # integrations which need to store the previous press event to determine which button was released
+  integrations_with_prev_event_storage: [zha, zigbee2mqtt]
+  # build data to send within a controller event
+  controller_id: !input controller_device
+mode: restart
+max_exceeded: silent
+triggers:
+  # triggers for zigbee2mqtt mqtt device action
+  - trigger: device
+    domain: mqtt
+    device_id: !input controller_device
+    type: action
+    subtype: 'on'
+  - trigger: device
+    domain: mqtt
+    device_id: !input controller_device
+    type: action
+    subtype: 'off'
+  - trigger: device
+    domain: mqtt
+    device_id: !input controller_device
+    type: action
+    subtype: brightness_move_up
+  - trigger: device
+    domain: mqtt
+    device_id: !input controller_device
+    type: action
+    subtype: brightness_move_down
+  - trigger: device
+    domain: mqtt
+    device_id: !input controller_device
+    type: action
+    subtype: brightness_stop
+  # triggers for other integrations
+  - trigger: event
+    event_type:
+      - deconz_event
+      - zha_event
+    event_data:
+      device_id: !input controller_device
+conditions:
+  - condition: and
+    conditions:
+      # check that the button event is not empty
+      - >-
+        {%- set trigger_action -%}
+        {%- if integration_id == "zigbee2mqtt" -%}
+        {{ trigger.payload }}
+        {%- elif integration_id == "deconz" -%}
+        {{ trigger.event.data.event }}
+        {%- elif integration_id == "zha" -%}
+        {{ trigger.event.data.command }}{{"_" if trigger.event.data.args|length > 0}}{{ trigger.event.data.args|join("_") }}
+        {%- endif -%}
+        {%- endset -%}
+        {{ trigger_action not in ["","None"] }}
+actions:
+  # debouncing - when automation is triggered multiple times, the last automation run is the one which completes execution, due to mode restart
+  # therefore previous runs must wait for the debounce delay before executing any other action
+  # if the delay expires and the automation is still running it means it's the last run and execution can continue
+  - delay:
+      milliseconds: !input helper_debounce_delay
+  # extract button event from the trigger
+  # provide a single string value to check against
+  - variables:
+      trigger_action: >-
+        {%- if integration_id == "zigbee2mqtt" -%}
+        {{ trigger.payload }}
+        {%- elif integration_id == "deconz" -%}
+        {{ trigger.event.data.event }}
+        {%- elif integration_id == "zha" -%}
+        {{ trigger.event.data.command }}{{"_" if trigger.event.data.args|length > 0}}{{ trigger.event.data.args|join("_") }}
+        {%- endif -%}
+      deserialized_state: '{{ (states(helper_last_controller_event) | from_json) if helper_last_controller_event is not none and (states(helper_last_controller_event) | regex_match("^\{\s*?((\"a\":\s*?\".*\"|\"t\":\s*?\d+\.\d+)(,\s*?)?){2}\s*?\}$")) else {} }}'
+      trigger_delta: '{{ (as_timestamp(now()) - (deserialized_state.t | default(0))) * 1000 }}'
+      last_controller_event: '{{ (deserialized_state.a | default("")) }}'
+  # update helper
+  - action: input_text.set_value
+    data:
+      entity_id: !input helper_last_controller_event
+      value: '{{ {"a":trigger_action,"t":as_timestamp(now())} | to_json }}'
+  # choose the sequence to run based on the received button event
   - choose:
-      # -------- Button 1 --------
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b1_cmd_single | string)
-                 and ((b1_ep | string) == '' or zha_endpoint == (b1_ep | string)) }}
-        sequence: !input b1_single_action
-
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b1_cmd_double | string)
-                 and ((b1_ep | string) == '' or zha_endpoint == (b1_ep | string)) }}
-        sequence: !input b1_double_action
-
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b1_cmd_long_start | string)
-                 and ((b1_ep | string) == '' or zha_endpoint == (b1_ep | string)) }}
+      - conditions: '{{ trigger_action | string in button_up_short }}'
         sequence:
-          - repeat:
-              sequence:
-                - sequence: !input b1_long_loop_action
-                - wait_for_trigger:
-                    - platform: event
-                      event_type: zha_event
-                      event_data:
-                        device_id: !input zha_device
-                        command: !input zha_cmd_release
-                  timeout:
-                    milliseconds: !input loop_interval_ms
-                  continue_on_timeout: true
-              until:
-                - condition: template
-                  value_template: >
-                    {{ (wait.trigger is defined
-                        and ((b1_ep | string) == ''
-                             or (wait.trigger.event.data.endpoint_id | default('') | string) == (b1_ep | string)))
-                       or repeat.index >= loop_max }}
-
-      # -------- Button 2 --------
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b2_cmd_single | string)
-                 and ((b2_ep | string) == '' or zha_endpoint == (b2_ep | string)) }}
-        sequence: !input b2_single_action
-
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b2_cmd_double | string)
-                 and ((b2_ep | string) == '' or zha_endpoint == (b2_ep | string)) }}
-        sequence: !input b2_double_action
-
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.id == 'zha_event'
-                 and zha_event_device_id == zha_device_id
-                 and zha_cmd == (inputs.zha_b2_cmd_long_start | string)
-                 and ((b2_ep | string) == '' or zha_endpoint == (b2_ep | string)) }}
+          - choose:
+              # if double press event is enabled
+              - conditions: '{{ button_up_double_press }}'
+                sequence:
+                  - choose:
+                      # if previous event was a short press
+                      - conditions: '{{ trigger_action | string == last_controller_event and trigger_delta | int <= helper_double_press_delay | int }}'
+                        sequence:
+                          # store the double press event in the last controller event helper
+                          - action: input_text.set_value
+                            data:
+                              entity_id: !input helper_last_controller_event
+                              value: '{{ {"a":"double_press_up","t":as_timestamp(now())} | to_json }}'
+                          # run the double press action
+                          # fire the event
+                          - event: ahb_controller_event
+                            event_data:
+                              controller: '{{ controller_id }}'
+                              action: button_up_double
+                          # run the custom action
+                          - choose:
+                              - conditions: []
+                                sequence: !input action_button_up_double
+                    # previous event was not a short press
+                    default:
+                      # wait for the double press event to occur, within the provided delay
+                      # if the second press is received, automation is restarted
+                      - delay:
+                          milliseconds: '{{ adjusted_double_press_delay }}'
+                      # if delay expires, no second press was received, therefore run the short press action
+                      # run the short press action
+                      # fire the event
+                      - event: ahb_controller_event
+                        event_data:
+                          controller: '{{ controller_id }}'
+                          action: button_up_short
+                      # run the custom action
+                      - choose:
+                          - conditions: []
+                            sequence: !input action_button_up_short
+            # if double press event is disabled run the action for the single short press
+            default:
+              # fire the event
+              - event: ahb_controller_event
+                event_data:
+                  controller: '{{ controller_id }}'
+                  action: button_up_short
+              # run the custom action
+              - choose:
+                  - conditions: []
+                    sequence: !input action_button_up_short
+      - conditions: '{{ trigger_action | string in button_up_long }}'
         sequence:
-          - repeat:
-              sequence:
-                - sequence: !input b2_long_loop_action
-                - wait_for_trigger:
-                    - platform: event
-                      event_type: zha_event
-                      event_data:
-                        device_id: !input zha_device
-                        command: !input zha_cmd_release
-                  timeout:
-                    milliseconds: !input loop_interval_ms
-                  continue_on_timeout: true
-              until:
-                - condition: template
-                  value_template: >
-                    {{ (wait.trigger is defined
-                        and ((b2_ep | string) == ''
-                             or (wait.trigger.event.data.endpoint_id | default('') | string) == (b2_ep | string)))
-                       or repeat.index >= loop_max }}
+          # fire the event only once before looping the action
+          - event: ahb_controller_event
+            event_data:
+              controller: '{{ controller_id }}'
+              action: button_up_long
+          - choose:
+              # if looping is enabled, loop the action for a finite number of iterations
+              - conditions: '{{ button_up_long_loop }}'
+                sequence:
+                  - repeat:
+                      while: '{{ repeat.index < button_up_long_max_loop_repeats | int }}'
+                      sequence: !input action_button_up_long
+            # if looping is not enabled run the custom action only once
+            default: !input action_button_up_long
+      - conditions:
+          - '{{ trigger_action | string in button_up_release }}'
+          # for integrations which need to store the last controller event, need to check the previous button event, stored in the provided input_text
+          - '{{ not integration_id in integrations_with_prev_event_storage or last_controller_event | string in button_up_long }}'
+        sequence:
+          # fire the event
+          - event: ahb_controller_event
+            event_data:
+              controller: '{{ controller_id }}'
+              action: button_up_release
+          # run the custom action
+          - choose:
+              - conditions: []
+                sequence: !input action_button_up_release
+      - conditions: '{{ trigger_action | string in button_down_short }}'
+        sequence:
+          - choose:
+              # if double press event is enabled
+              - conditions: '{{ button_down_double_press }}'
+                sequence:
+                  - choose:
+                      # if previous event was a short press
+                      - conditions: '{{ trigger_action | string == last_controller_event and trigger_delta | int <= helper_double_press_delay | int }}'
+                        sequence:
+                          # store the double press event in the last controller event helper
+                          - action: input_text.set_value
+                            data:
+                              entity_id: !input helper_last_controller_event
+                              value: '{{ {"a":"double_press_down","t":as_timestamp(now())} | to_json }}'
+                          # run the double press action
+                          # fire the event
+                          - event: ahb_controller_event
+                            event_data:
+                              controller: '{{ controller_id }}'
+                              action: button_down_double
+                          # run the custom action
+                          - choose:
+                              - conditions: []
+                                sequence: !input action_button_down_double
+                    # previous event was not a short press
+                    default:
+                      # wait for the double press event to occur, within the provided delay
+                      # if the second press is received, automation is restarted
+                      - delay:
+                          milliseconds: '{{ adjusted_double_press_delay }}'
+                      # if delay expires, no second press was received, therefore run the short press action
+                      # run the short press action
+                      # fire the event
+                      - event: ahb_controller_event
+                        event_data:
+                          controller: '{{ controller_id }}'
+                          action: button_down_short
+                      # run the custom action
+                      - choose:
+                          - conditions: []
+                            sequence: !input action_button_down_short
+            # if double press event is disabled run the action for the single short press
+            default:
+              # fire the event
+              - event: ahb_controller_event
+                event_data:
+                  controller: '{{ controller_id }}'
+                  action: button_down_short
+              # run the custom action
+              - choose:
+                  - conditions: []
+                    sequence: !input action_button_down_short
+      - conditions: '{{ trigger_action | string in button_down_long }}'
+        sequence:
+          # fire the event only once before looping the action
+          - event: ahb_controller_event
+            event_data:
+              controller: '{{ controller_id }}'
+              action: button_down_long
+          - choose:
+              # if looping is enabled, loop the action for a finite number of iterations
+              - conditions: '{{ button_down_long_loop }}'
+                sequence:
+                  - repeat:
+                      while: '{{ repeat.index < button_down_long_max_loop_repeats | int }}'
+                      sequence: !input action_button_down_long
+            # if looping is not enabled run the custom action only once
+            default: !input action_button_down_long
+      - conditions:
+          - '{{ trigger_action | string in button_down_release }}'
+          # for integrations which need to store the last controller event, need to check the previous button event, stored in the provided input_text
+          - '{{ not integration_id in integrations_with_prev_event_storage or last_controller_event | string in button_down_long }}'
+        sequence:
+          # fire the event
+          - event: ahb_controller_event
+            event_data:
+              controller: '{{ controller_id }}'
+              action: button_down_release
+          # run the custom action
+          - choose:
+              - conditions: []
+                sequence: !input action_button_down_release
